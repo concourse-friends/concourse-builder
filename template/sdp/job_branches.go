@@ -4,17 +4,18 @@ import (
 	"github.com/concourse-friends/concourse-builder/library"
 	"github.com/concourse-friends/concourse-builder/model"
 	"github.com/concourse-friends/concourse-builder/project"
+	"github.com/concourse-friends/concourse-builder/resource"
 )
 
 type BranchesJobArgs struct {
 	*library.GitImageJobArgs
 	*library.FlyImageJobArgs
+	TargetGitRepo           *library.GitRepo
 	Environment             map[string]interface{}
 	GenerateProjectLocation project.IRun
 }
 
-func BranchesJob(args *BranchesJobArgs) *project.Job {
-
+func taskObtainBranches(args *BranchesJobArgs, branchesDir *library.TaskOutput) *project.TaskStep {
 	gitImage, _ := library.GitImageJob(args.GitImageJobArgs)
 
 	gitImageResource := &project.JobResource{
@@ -22,11 +23,29 @@ func BranchesJob(args *BranchesJobArgs) *project.Job {
 		Trigger: true,
 	}
 
-	branchesDir := &library.TaskOutput{
-		Directory: "branches",
+	targetGitResource := &project.Resource{
+		Name: "target-git",
+		Type: resource.GitResourceType.Name,
+		Source: &library.GitSource{
+			Repo:   args.TargetGitRepo,
+			Branch: "master",
+		},
 	}
 
-	taskBranches := &project.TaskStep{
+	args.GitImageJobArgs.ResourceRegistry.MustRegister(targetGitResource)
+
+	targetGitJobResource := &project.JobResource{
+		Name:    targetGitResource.Name,
+		Trigger: true,
+	}
+
+	params := make(map[string]interface{})
+	params["GIT_REPO_DIR"] = &library.Location{
+		Volume: targetGitJobResource,
+	}
+	params["OUTPUT_DIR"] = branchesDir.Path()
+
+	task := &project.TaskStep{
 		Platform: model.LinuxPlatform,
 		Name:     "obtain branches",
 		Image:    gitImageResource,
@@ -37,14 +56,48 @@ func BranchesJob(args *BranchesJobArgs) *project.Job {
 			RelativePath: "obtain_branches.sh",
 		},
 
-		Params: args.Environment,
+		Params: params,
 		Outputs: []project.IOutput{
 			branchesDir,
 		},
 	}
 
-	// TODO: Add task to create bootstrap pipelines for the branches
+	return task
+}
 
+func taskPreparePipelines(args *BranchesJobArgs, branchesDir *library.TaskOutput, pipelinesDir *library.TaskOutput) *project.TaskStep {
+	args.GitImageJobArgs.ResourceRegistry.MustRegister(library.GoImage)
+
+	goImageResource := &project.JobResource{
+		Name:    library.GoImage.Name,
+		Trigger: true,
+	}
+
+	params := make(map[string]interface{})
+	for k, v := range args.Environment {
+		params[k] = v
+	}
+
+	params[BranchesFileEnvVar] = &library.Location{
+		Volume:       branchesDir,
+		RelativePath: "branches",
+	}
+
+	task := &project.TaskStep{
+		Platform: model.LinuxPlatform,
+		Name:     "prepare pipelines",
+		Image:    goImageResource,
+		Run:      args.GenerateProjectLocation,
+		Params:   params,
+		Outputs: []project.IOutput{
+			pipelinesDir,
+		},
+	}
+
+	return task
+}
+
+func taskCreateMissingPipelines(args *BranchesJobArgs, pipelinesDir *library.TaskOutput) *project.TaskStep {
 	flyImage, _ := library.FlyImageJob(args.FlyImageJobArgs)
 
 	flyImageResource := &project.JobResource{
@@ -52,11 +105,7 @@ func BranchesJob(args *BranchesJobArgs) *project.Job {
 		Trigger: true,
 	}
 
-	pipelinesDir := &library.TaskOutput{
-		Directory: "pipelines",
-	}
-
-	taskCreateMissing := &project.TaskStep{
+	task := &project.TaskStep{
 		Platform: model.LinuxPlatform,
 		Name:     "create missing pipelines",
 		Image:    flyImageResource,
@@ -76,15 +125,33 @@ func BranchesJob(args *BranchesJobArgs) *project.Job {
 		},
 	}
 
+	return task
+}
+
+func BranchesJob(args *BranchesJobArgs) *project.Job {
+	branchesDir := &library.TaskOutput{
+		Directory: "branches",
+	}
+
+	taskObtainBranches := taskObtainBranches(args, branchesDir)
+
+	pipelinesDir := &library.TaskOutput{
+		Directory: "pipelines",
+	}
+
+	taskPreparePipelines := taskPreparePipelines(args, branchesDir, pipelinesDir)
+
+	taskCreateMissingPipelines := taskCreateMissingPipelines(args, pipelinesDir)
+
 	// TODO: Add task to remove pipeliens for already removed branches
 
 	branchesJob := &project.Job{
 		Name:   project.JobName("branches"),
 		Groups: project.JobGroups{},
 		Steps: project.ISteps{
-			taskBranches,
-			//taskCreatePipelines,
-			taskCreateMissing,
+			taskObtainBranches,
+			taskPreparePipelines,
+			taskCreateMissingPipelines,
 			//taskRemoveNotNeeded,
 		},
 	}

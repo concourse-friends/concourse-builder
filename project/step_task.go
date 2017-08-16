@@ -1,6 +1,8 @@
 package project
 
 import (
+	"sort"
+
 	"github.com/concourse-friends/concourse-builder/model"
 )
 
@@ -20,6 +22,10 @@ type IParamValue interface {
 
 type IParamInput interface {
 	OutputName() string
+}
+
+type IParamResource interface {
+	InputResources() JobResources
 }
 
 type TaskStep struct {
@@ -48,21 +54,31 @@ func (ts *TaskStep) Model() (model.IStep, error) {
 	}
 
 	runInputResources := ts.Run.InputResources()
+
+	inputsMap := make(map[string]struct{})
 	for _, runInputResource := range runInputResources {
-		task.Config.Inputs = append(task.Config.Inputs, &model.TaskInput{
-			Name: model.ResourceName(runInputResource.Name),
-		})
+		inputsMap[string(runInputResource.Name)] = struct{}{}
 	}
 
 	for _, value := range ts.Params {
 		if param, ok := value.(IParamInput); ok {
 			name := param.OutputName()
 			if name != "" {
-				task.Config.Inputs = append(task.Config.Inputs, &model.TaskInput{
-					Name: model.ResourceName(name),
-				})
+				inputsMap[name] = struct{}{}
 			}
 		}
+	}
+
+	inputs := make([]string, 0, len(inputsMap))
+	for input := range inputsMap {
+		inputs = append(inputs, input)
+	}
+
+	sort.Strings(inputs)
+	for _, name := range inputs {
+		task.Config.Inputs = append(task.Config.Inputs, &model.TaskInput{
+			Name: model.ResourceName(name),
+		})
 	}
 
 	for _, output := range ts.Outputs {
@@ -92,6 +108,12 @@ func (ts *TaskStep) InputResources() (JobResources, error) {
 
 	locationResources := ts.Run.InputResources()
 	resources = append(resources, locationResources...)
+
+	for _, value := range ts.Params {
+		if param, ok := value.(IParamResource); ok {
+			resources = append(resources, param.InputResources()...)
+		}
+	}
 
 	return resources.Deduplicate(), nil
 }

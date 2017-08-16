@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -ex
+set -e
 
 fly --target trgt login --insecure --concourse-url $CONCOURSE_URL --username $CONCOURSE_USER --password $CONCOURSE_PASSWORD
 
@@ -16,6 +16,6 @@ do
     then
         echo "'$name' pipeline already exists, skipping"
     else
-        fly --target trgt --pipeline $name -c $yml --non-interactive && echo "$name created"
+        fly --target trgt set-pipeline --non-interactive --pipeline=$name --config=$yml && echo "$name created"
     fi
 done

@@ -9,5 +9,5 @@ cd $PIPELINES
 for yml in *
 do
     name=$(echo $yml | cut -f 1 -d '.')
-    fly -t trgt set-pipeline -n -p $name -c $yml
+    fly -t trgt set-pipeline --non-interactive --pipeline=$name --config=$yml
 done

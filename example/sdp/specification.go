@@ -26,8 +26,17 @@ func (s *testSpecification) DeployImageRegistry() (*library.ImageRegistry, error
 
 func (s *testSpecification) ConcourseBuilderGitSource() (*library.GitSource, error) {
 	return &library.GitSource{
-		URI:        "git@github.com:concourse-friends/concourse-builder.git",
-		Branch:     "master",
+		Repo: &library.GitRepo{
+			URI:        "git@github.com:concourse-friends/concourse-builder.git",
+			PrivateKey: "private-key",
+		},
+		Branch: "master",
+	}, nil
+}
+
+func (s *testSpecification) TargetGitRepo() (*library.GitRepo, error) {
+	return &library.GitRepo{
+		URI:        "git@github.com:target.git",
 		PrivateKey: "private-key",
 	}, nil
 }
@@ -46,8 +55,4 @@ func (s *testSpecification) Environment() (map[string]interface{}, error) {
 	return map[string]interface{}{
 		"BRANCH": "branch",
 	}, nil
-}
-
-func (s *testSpecification) BootstrapBranches() []string {
-	return nil
 }

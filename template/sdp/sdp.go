@@ -1,6 +1,10 @@
 package sdp
 
 import (
+	"io/ioutil"
+	"os"
+	"strings"
+
 	"github.com/concourse-friends/concourse-builder/library"
 	"github.com/concourse-friends/concourse-builder/project"
 	"github.com/concourse-friends/concourse-builder/template/sdp_branch"
@@ -11,14 +15,33 @@ type Specification interface {
 	DeployImageRegistry() (*library.ImageRegistry, error)
 	ConcourseBuilderGitSource() (*library.GitSource, error)
 	GenerateProjectLocation(resourceRegistry *project.ResourceRegistry, overrideBranch string) (project.IRun, error)
+	TargetGitRepo() (*library.GitRepo, error)
 	Environment() (map[string]interface{}, error)
-	BootstrapBranches() []string
+}
+
+const BranchesFileEnvVar = "BRANCHES_FILE"
+
+func BootstrapBranches() ([]string, error) {
+	branchesFile, exist := os.LookupEnv(BranchesFileEnvVar)
+	if !exist {
+		return nil, nil
+	}
+	branches, err := ioutil.ReadFile(branchesFile)
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(string(branches), "\n"), err
 }
 
 func GenerateProject(specification Specification) (*project.Project, error) {
 	prj := &project.Project{}
 
-	for _, branch := range specification.BootstrapBranches() {
+	branches, err := BootstrapBranches()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, branch := range branches {
 		branchSpecification := &BranchBootstrapSpecification{
 			Specification: specification,
 			Branch:        branch,
@@ -78,11 +101,17 @@ func GenerateProject(specification Specification) (*project.Project, error) {
 		GenerateProjectLocation: generateProjectLocation,
 	})
 
+	targetGit, err := specification.TargetGitRepo()
+	if err != nil {
+		return nil, err
+	}
+
 	branchesJob := BranchesJob(&BranchesJobArgs{
 		GitImageJobArgs: &library.GitImageJobArgs{
 			CurlImageJobArgs: curlImageJobArgs,
 		},
 		FlyImageJobArgs:         flyImageJobArgs,
+		TargetGitRepo:           targetGit,
 		Environment:             environment,
 		GenerateProjectLocation: generateProjectLocation,
 	})

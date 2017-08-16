@@ -28,8 +28,11 @@ func (l *Location) InputResources() project.JobResources {
 }
 
 func (l *Location) OutputName() string {
-	if res, ok := l.Volume.(*TaskOutput); ok {
-		return res.Name()
+	if output, ok := l.Volume.(*TaskOutput); ok {
+		return output.Name()
+	}
+	if res, ok := l.Volume.(*project.JobResource); ok {
+		return string(res.Name)
 	}
 	return ""
 }

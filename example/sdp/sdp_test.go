@@ -62,6 +62,12 @@ resources:
     repository: golang
     tag: "1.8"
   check_every: 24h
+- name: target-git
+  type: git
+  source:
+    uri: git@github.com:target.git
+    branch: master
+    private_key: private-key
 - name: ubuntu-image
   type: docker-image
   source:
@@ -116,8 +122,8 @@ jobs:
       - name: concourse-builder-git
       params:
         DOCKERFILE_DIR: concourse-builder-git/docker/fly
-        EVAL: echo ENV FLY_VERSION=`+"`"+`curl http://concourse.com/api/v1/info | awk -F
-          ',' ' { print $1 } ' | awk -F ':' ' { print $2 } '`+"`"+`
+        EVAL: echo ENV FLY_VERSION=` + "`" + `curl http://concourse.com/api/v1/info | awk -F
+          ',' ' { print $1 } ' | awk -F ':' ' { print $2 } '` + "`" + `
         FROM_IMAGE: registry.com/concourse-builder/curl-image:master
       run:
         path: concourse-builder-git/scripts/docker_image_prepare.sh
@@ -170,6 +176,11 @@ jobs:
 - name: branches
   plan:
   - aggregate:
+    - get: concourse-builder-git
+      trigger: true
+      passed:
+      - fly-image
+      - git-image
     - get: fly-image
       trigger: true
       passed:
@@ -178,18 +189,41 @@ jobs:
       trigger: true
       passed:
       - git-image
+    - get: go-image
+      trigger: true
+    - get: target-git
+      trigger: true
   - task: obtain branches
     image: git-image
     config:
       platform: linux
+      inputs:
+      - name: target-git
       params:
-        BRANCH: branch
-        PIPELINES: pipelines
+        GIT_PRIVATE_KEY: private-key
+        GIT_REPO_DIR: target-git
+        OUTPUT_DIR: branches
       run:
         path: /bin/obtain_branches.sh
       outputs:
       - name: branches
         path: branches
+  - task: prepare pipelines
+    image: go-image
+    config:
+      platform: linux
+      inputs:
+      - name: concourse-builder-git
+      - name: pipelines
+      params:
+        BRANCH: branch
+        BRANCH_FILE: pipelines/branches
+        PIPELINES: pipelines
+      run:
+        path: concourse-builder-git/foo
+      outputs:
+      - name: pipelines
+        path: pipelines
   - task: create missing pipelines
     image: fly-image
     config:
