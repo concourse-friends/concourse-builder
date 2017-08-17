@@ -12,7 +12,12 @@ cd $PIPELINES
 for yml in *
 do
     name=$(echo $yml | cut -f 1 -d '.')
-    if ! echo $branches | grep -w name; then
+
+    if [ -z "$PIPELINE_REGEX"  ]; then
+        name="$PIPELINE_REGEX"
+    fi
+
+    if echo $branches | grep -w name; then
         fly -t trgt destroy-pipeline --non-interactive --pipeline=$name
     fi
 done

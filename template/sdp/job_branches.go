@@ -138,13 +138,13 @@ func taskRemoveNotNeededPipelines(args *BranchesJobArgs, pipelinesDir *library.T
 
 	task := &project.TaskStep{
 		Platform: model.LinuxPlatform,
-		Name:     "remove missing pipelines",
+		Name:     "remove not needed pipelines",
 		Image:    flyImageResource,
 		Run: &library.Location{
 			Volume: &library.Directory{
 				Root: "/bin",
 			},
-			RelativePath: "remove_missing_pipelines.sh",
+			RelativePath: "remove_not_needed_pipelines.sh",
 		},
 		Params: map[string]interface{}{
 			"PIPELINES": &library.Location{
@@ -154,6 +154,7 @@ func taskRemoveNotNeededPipelines(args *BranchesJobArgs, pipelinesDir *library.T
 			"CONCOURSE_USER":     args.Concourse.User,
 			"CONCOURSE_PASSWORD": args.Concourse.Password,
 			"BRANCHES_DIR":       branchesDir.Path(),
+			"PIPELINE_REGEX":	  "",
 		},
 	}
 

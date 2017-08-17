@@ -42,11 +42,9 @@ func GenerateProject(specification Specification) (*project.Project, error) {
 		return nil, err
 	}
 
+	re := regexp.MustCompile("master|release/.*|feature/.*|task/.*")
+
 	for _, branch := range branches {
-		re, err := regexp.Compile("master|release/.*|feature/.*|task/.*")
-		if err != nil {
-			return nil, err
-		}
 
 		if re.MatchString(branch) {
 			branchSpecification := &BranchBootstrapSpecification{
