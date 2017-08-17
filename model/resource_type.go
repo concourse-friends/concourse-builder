@@ -24,3 +24,5 @@ type ResourceType struct {
 
 // A collection of resource types
 type ResourceTypes []*ResourceType
+
+const DockerImageType = ResourceTypeTypeName("docker-image")

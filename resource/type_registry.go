@@ -35,6 +35,10 @@ func (r *TypeRegistry) MustRegisterType(resourceType *model.ResourceType) {
 	r.types[resourceType.Name] = resourceType
 }
 
+func (r *TypeRegistry) RegisterType(resourceTypeName model.ResourceTypeName) *model.ResourceType {
+	return r.types[resourceTypeName]
+}
+
 var GlobalTypeRegistry = initTypeRegistry()
 
 func initTypeRegistry() *TypeRegistry {

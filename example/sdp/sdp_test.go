@@ -26,6 +26,11 @@ var expected = `groups:
   jobs:
   - curl-image
   - fly-image
+resource_types:
+- name: git-multibranch
+  type: docker-image
+  source:
+    repository: cfcommunity/git-multibranch-resource
 resources:
 - name: concourse-builder-git
   type: git
@@ -61,10 +66,9 @@ resources:
     tag: "1.8"
   check_every: 24h
 - name: target-git
-  type: git
+  type: git-multibranch
   source:
     uri: git@github.com:target.git
-    branch: master
     private_key: private-key
 - name: ubuntu-image
   type: docker-image

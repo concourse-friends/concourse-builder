@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/concourse-friends/concourse-builder/model"
+	"github.com/concourse-friends/concourse-builder/resource"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -128,11 +129,7 @@ func (p *Pipeline) ModelGroups(allJobs Jobs) (model.Groups, error) {
 	return modelGroups, nil
 }
 
-func (p *Pipeline) ModelResourceTypes() (model.ResourceTypes, error) {
-	return nil, nil
-}
-
-func (p *Pipeline) ModelResources(allJobs Jobs) (model.Resources, error) {
+func resources(allJobs Jobs) (JobResources, error) {
 	var jobResources JobResources
 	for _, job := range allJobs {
 		resources, err := job.Resources()
@@ -142,7 +139,50 @@ func (p *Pipeline) ModelResources(allJobs Jobs) (model.Resources, error) {
 		jobResources = append(jobResources, resources...)
 	}
 
-	jobResources = jobResources.Deduplicate()
+	return jobResources.Deduplicate(), nil
+}
+
+func (p *Pipeline) ModelResourceTypes(allJobs Jobs) (model.ResourceTypes, error) {
+	jobResources, err := resources(allJobs)
+	if err != nil {
+		return nil, err
+	}
+
+	typesSet := make(map[model.ResourceTypeName]struct{})
+
+	for _, jobResource := range jobResources {
+		res := p.ResourceRegistry.MustGetResource(jobResource.Name)
+		resourceType := resource.GlobalTypeRegistry.RegisterType(res.Type)
+		if resourceType == nil {
+			continue
+		}
+
+		typesSet[resourceType.Name] = struct{}{}
+	}
+
+	types := make([]string, 0, len(typesSet))
+	for k := range typesSet {
+		types = append(types, string(k))
+	}
+
+	sort.Strings(types)
+
+	var resourceTypes model.ResourceTypes
+	for _, tp := range types {
+		resourceType := resource.GlobalTypeRegistry.RegisterType(model.ResourceTypeName(tp))
+		if resourceType.Type != resource.SystemResourceTypeName {
+			resourceTypes = append(resourceTypes, resourceType)
+		}
+	}
+
+	return resourceTypes, nil
+}
+
+func (p *Pipeline) ModelResources(allJobs Jobs) (model.Resources, error) {
+	jobResources, err := resources(allJobs)
+	if err != nil {
+		return nil, err
+	}
 
 	var resources model.Resources
 	for _, res := range jobResources {
@@ -185,7 +225,7 @@ func (p *Pipeline) Save(writer io.Writer) error {
 		return err
 	}
 
-	resourceTypes, err := p.ModelResourceTypes()
+	resourceTypes, err := p.ModelResourceTypes(allJobs)
 	if err != nil {
 		return err
 	}

@@ -5,14 +5,6 @@ import (
 	"github.com/concourse-friends/concourse-builder/resource"
 )
 
-type GitRepo struct {
-	// URI to the git repo
-	URI string `yaml:",omitempty"`
-
-	// Private key the has access to the repo
-	PrivateKey string `yaml:"private_key,omitempty"`
-}
-
 type GitSource struct {
 	// Git repo and credentials
 	Repo *GitRepo

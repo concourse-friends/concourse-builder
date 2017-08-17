@@ -25,10 +25,9 @@ func taskObtainBranches(args *BranchesJobArgs, branchesDir *library.TaskOutput) 
 
 	targetGitResource := &project.Resource{
 		Name: "target-git",
-		Type: resource.GitResourceType.Name,
-		Source: &library.GitSource{
-			Repo:   args.TargetGitRepo,
-			Branch: "master",
+		Type: resource.GitMultibranchResourceType.Name,
+		Source: &library.GitMultiSource{
+			Repo: args.TargetGitRepo,
 		},
 	}
 
