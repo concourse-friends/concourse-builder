@@ -154,7 +154,7 @@ func taskRemoveNotNeededPipelines(args *BranchesJobArgs, pipelinesDir *library.T
 			"CONCOURSE_USER":     args.Concourse.User,
 			"CONCOURSE_PASSWORD": args.Concourse.Password,
 			"BRANCHES_DIR":       branchesDir.Path(),
-			"PIPELINE_REGEX":	  "",
+			"PIPELINE_REGEX":	  "*sdpd*",
 		},
 	}
 
