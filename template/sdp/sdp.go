@@ -8,6 +8,7 @@ import (
 	"github.com/concourse-friends/concourse-builder/library"
 	"github.com/concourse-friends/concourse-builder/project"
 	"github.com/concourse-friends/concourse-builder/template/sdp_branch"
+	"regexp"
 )
 
 type Specification interface {
@@ -42,15 +43,22 @@ func GenerateProject(specification Specification) (*project.Project, error) {
 	}
 
 	for _, branch := range branches {
-		branchSpecification := &BranchBootstrapSpecification{
-			Specification: specification,
-			Branch:        branch,
-		}
-		project, err := sdpBranch.GenerateBootstrapProject(branchSpecification)
+		re, err := regexp.Compile("master|release/.*|feature/.*|task/.*")
 		if err != nil {
 			return nil, err
 		}
-		prj.Pipelines = append(prj.Pipelines, project.Pipelines...)
+
+		if re.MatchString(branch) {
+			branchSpecification := &BranchBootstrapSpecification{
+				Specification: specification,
+				Branch:        branch,
+			}
+			project, err := sdpBranch.GenerateBootstrapProject(branchSpecification)
+			if err != nil {
+				return nil, err
+			}
+			prj.Pipelines = append(prj.Pipelines, project.Pipelines...)
+		}
 	}
 
 	mainPipeline := project.NewPipeline()
