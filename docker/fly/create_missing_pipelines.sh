@@ -19,3 +19,4 @@ do
         fly --target trgt set-pipeline --non-interactive --pipeline=$name --config=$yml && echo "$name created"
     fi
 done
+
