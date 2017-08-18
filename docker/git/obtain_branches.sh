@@ -18,4 +18,11 @@ fi
 mkdir -p $BUILD_DIR/$OUTPUT_DIR
 
 cd $BUILD_DIR/$GIT_REPO_DIR
-git branch -r > $BUILD_DIR/$OUTPUT_DIR/branches
+
+{
+  git branch -r | \
+  grep -v ">" | \
+  while read rbranch
+     do echo $rbranch | rev | cut -d/ -f1 | rev
+  done
+ } >  $BUILD_DIR/$OUTPUT_DIR/branches
