@@ -127,6 +127,39 @@ func taskCreateMissingPipelines(args *BranchesJobArgs, pipelinesDir *library.Tas
 	return task
 }
 
+func taskRemoveNotNeededPipelines(args *BranchesJobArgs, pipelinesDir *library.TaskOutput, branchesDir *library.TaskOutput) *project.TaskStep {
+	flyImage, _ := library.FlyImageJob(args.FlyImageJobArgs)
+
+	flyImageResource := &project.JobResource{
+		Name:    flyImage.Name,
+		Trigger: true,
+	}
+
+	task := &project.TaskStep{
+		Platform: model.LinuxPlatform,
+		Name:     "remove not needed pipelines",
+		Image:    flyImageResource,
+		Run: &library.Location{
+			Volume: &library.Directory{
+				Root: "/bin",
+			},
+			RelativePath: "remove_not_needed_pipelines.sh",
+		},
+		Params: map[string]interface{}{
+			"PIPELINES": &library.Location{
+				Volume: pipelinesDir,
+			},
+			"CONCOURSE_URL":      args.Concourse.URL,
+			"CONCOURSE_USER":     args.Concourse.User,
+			"CONCOURSE_PASSWORD": args.Concourse.Password,
+			"BRANCHES_DIR":       branchesDir.Path(),
+			"PIPELINE_REGEX":	  "*sdpd*",
+		},
+	}
+
+	return task
+}
+
 func BranchesJob(args *BranchesJobArgs) *project.Job {
 	branchesDir := &library.TaskOutput{
 		Directory: "branches",
@@ -142,7 +175,7 @@ func BranchesJob(args *BranchesJobArgs) *project.Job {
 
 	taskCreateMissingPipelines := taskCreateMissingPipelines(args, pipelinesDir)
 
-	// TODO: Add task to remove pipeliens for already removed branches
+	taskRemoveNotNeededPipelines := taskRemoveNotNeededPipelines(args, pipelinesDir, branchesDir)
 
 	branchesJob := &project.Job{
 		Name:   project.JobName("branches"),
@@ -151,7 +184,7 @@ func BranchesJob(args *BranchesJobArgs) *project.Job {
 			taskObtainBranches,
 			taskPreparePipelines,
 			taskCreateMissingPipelines,
-			//taskRemoveNotNeeded,
+			taskRemoveNotNeededPipelines,
 		},
 	}
 

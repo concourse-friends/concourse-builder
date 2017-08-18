@@ -15,7 +15,6 @@ then
   exit 1
 fi
 
-mkdir -p $BUILD_DIR/$OUTPUT_DIR
+mkdir -p $BUILD_DIR/$OUTPUT_DIR && cd $BUILD_DIR/$GIT_REPO_DIR
 
-cd $BUILD_DIR/$GIT_REPO_DIR
-git branch -r > $BUILD_DIR/$OUTPUT_DIR/branches
+git branch -r | sed 's/.*-\>//g' | sed 's/^ *origin\///g' | sort | uniq >  $BUILD_DIR/$OUTPUT_DIR/branches
