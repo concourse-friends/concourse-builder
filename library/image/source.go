@@ -12,6 +12,7 @@ type Source struct {
 	Registry   *Registry
 	Repository string
 	Tag        Tag
+	Name       string
 }
 
 func (im *Source) ModelSource(scope project.Scope, info *project.ScopeInfo) interface{} {
@@ -30,6 +31,7 @@ func (im *Source) ModelSource(scope project.Scope, info *project.ScopeInfo) inte
 	source := &resource.ImageSource{
 		Repository: repository,
 		Tag:        string(ConvertToImageTag(tag)),
+		TargetName: im.Name
 	}
 
 	if im.Registry.AwsAccessKeyId != "" || im.Registry.AwsSecretAccessKey != "" {
