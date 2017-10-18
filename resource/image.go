@@ -19,6 +19,9 @@ type ImageSource struct {
 	// Image repository
 	Repository string
 
+	// Docker target name
+	TargetName string
+
 	// Image tag
 	Tag string `yaml:",omitempty"`
 

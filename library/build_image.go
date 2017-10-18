@@ -21,6 +21,7 @@ type BuildImageArgs struct {
 	PrepareEnvironment map[string]interface{}
 	From               *project.Resource
 	Name               string
+	TargetName         string
 	DockerFileResource project.IValue
 	DockerFileSteps    string
 	Image              *project.Resource
@@ -47,6 +48,9 @@ func taskPrepare(args *BuildImageArgs) *project.TaskStep {
 			"FROM_IMAGE": &primitive.Location{
 				Volume: fromImageResource,
 			},
+			"TARGET_NAME": &primitive.Location{
+				Volume: args.TargetName,
+			},
 		},
 		Outputs: []project.IOutput{
 			preparedDir,
@@ -59,6 +63,7 @@ ROOT=` + "`pwd`" + `
 set -ex
 
 CHECK_ARGS=true
+TARGET_NAME_STR=""
 
 if [ -z "$DOCKERFILE_DIR" -a -z "$DOCKERFILE_STEPS" ]
 then
@@ -88,15 +93,20 @@ fi
 
 for SOURCE_DIR in $SOURCE_DIRS
 do
-    mkdir -p prepared/$SOURCE_DIR
-    cp -R $SOURCE_DIR/. prepared/$SOURCE_DIR
+	mkdir -p prepared/$SOURCE_DIR
+	cp -R $SOURCE_DIR/. prepared/$SOURCE_DIR
 done
+
+if [ ! -z "$TARGET_NAME" ]
+then
+	TARGET_NAME_STR=" as $TARGET_NAME"
+fi
 
 cd  prepared
 
 REPOSITORY=$(cat $ROOT/$FROM_IMAGE/repository)
 TAG=$(cat $ROOT/$FROM_IMAGE/tag)
-echo FROM $REPOSITORY:$TAG > Dockerfile
+echo FROM $REPOSITORY:$TAG$TARGET_NAME_STR > Dockerfile
 echo >> Dockerfile
 
 if [ ! -z "$EVAL" ]
