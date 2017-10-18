@@ -61,6 +61,7 @@ func SelfUpdateJob(args *SelfUpdateJobArgs) (*project.Job, *project.Resource) {
 	}
 
 	taskPrepare.Environment["PIPELINES"] = "pipelines"
+	taskPrepare.Environment["BRANCH"]=args.Environment["BRANCH"]
 
 	taskUpdate := &project.TaskStep{
 		Platform: model.LinuxPlatform,

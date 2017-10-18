@@ -14,6 +14,7 @@ type Specification interface {
 	SharedJobs(resourceRegistry *project.ResourceRegistry, gitResource *project.Resource) (project.Jobs, error)
 	ModifyJobs(resourceRegistry *project.ResourceRegistry) (project.Jobs, error)
 	VerifyJobs(resourceRegistry *project.ResourceRegistry) (project.Jobs, error)
+	MaintenanceJobs(resourceRegistry *project.ResourceRegistry) (project.Jobs, error)
 }
 
 func addPipelineResource(
@@ -152,6 +153,7 @@ func GenerateProject(specification Specification) (*project.Project, error) {
 		return nil, err
 	}
 
+	environment["BRANCH"] = specification.Branch().FriendlyName() +  "-git"
 	selfUpdateJob, pipelineResource := library.SelfUpdateJob(&library.SelfUpdateJobArgs{
 		LinuxImageResource:      linuxImage,
 		ConcourseBuilderGit:     concourseBuilderGit,
@@ -207,6 +209,23 @@ func GenerateProject(specification Specification) (*project.Project, error) {
 	err = addPipelineResource(mainPipeline, selfUpdateJob, pipelineJobResource)
 	if err != nil {
 		return nil, err
+	}
+
+	var maintenanceGroup = &project.JobGroup{
+		Name: "maintenance",
+	}
+
+	if concourseBuilderBranch.IsMaster() {
+		maintenanceJobs, err := specification.MaintenanceJobs(mainPipeline.ResourceRegistry)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, job := range maintenanceJobs {
+			job.AddToGroup(maintenanceGroup)
+			job.AddJobToRunAfter(selfUpdateJob)
+		}
+		mainPipeline.Jobs = append(mainPipeline.Jobs, maintenanceJobs...)
 	}
 
 	prj.Pipelines = append(prj.Pipelines, mainPipeline)
