@@ -14,7 +14,7 @@ type Specification interface {
 	SharedJobs(resourceRegistry *project.ResourceRegistry, gitResource *project.Resource) (project.Jobs, error)
 	ModifyJobs(resourceRegistry *project.ResourceRegistry) (project.Jobs, error)
 	VerifyJobs(resourceRegistry *project.ResourceRegistry) (project.Jobs, error)
-	MaintenanceJobs(resourceRegistry *project.ResourceRegistry) (project.Jobs, error)
+	MaintenanceJobs(resourceRegistry *project.ResourceRegistry, gitResource *project.Resource) (project.Jobs, error)
 }
 
 func addPipelineResource(
@@ -215,7 +215,7 @@ func GenerateProject(specification Specification) (*project.Project, error) {
 	}
 
 	if concourseBuilderBranch.IsMaster() {
-		maintenanceJobs, err := specification.MaintenanceJobs(mainPipeline.ResourceRegistry)
+		maintenanceJobs, err := specification.MaintenanceJobs(mainPipeline.ResourceRegistry, concourseBuilderGit)
 		if err != nil {
 			return nil, err
 		}

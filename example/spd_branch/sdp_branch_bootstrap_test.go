@@ -26,12 +26,14 @@ var expectedBootstrap = `groups:
   - curl-image
   - dummy_resource-image
   - fly-image
+  - aws-image
   - self-update
 - name: images
   jobs:
   - curl-image
   - dummy_resource-image
   - fly-image
+  - aws-image
 - name: res_types
   jobs:
   - dummy_resource-image
@@ -40,6 +42,7 @@ var expectedBootstrap = `groups:
   - curl-image
   - dummy_resource-image
   - fly-image
+  - aws-image
 resource_types:
 - name: dummy
   type: docker-image
@@ -78,6 +81,13 @@ resources:
   type: docker-image
   source:
     repository: registry.com/concourse-builder/fly-image
+    tag: installation
+    aws_access_key_id: key
+    aws_secret_access_key: secret
+- name: aws-image
+  type: docker-image
+  source:
+    repository: registry.com/concourse-builder/aws-image
     tag: installation
     aws_access_key_id: key
     aws_secret_access_key: secret

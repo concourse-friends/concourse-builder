@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set +e
 
 CHECK_ARGS=true
 
@@ -41,3 +41,5 @@ fly --target trgt login$INSECURE_VAR \
     --concourse-url $CONCOURSE_URL \
     --team-name $CONCOURSE_TEAM \
     $AUTHENTICATE
+
+set -e

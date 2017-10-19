@@ -52,6 +52,16 @@ func SharedResources(args *SharedResourcesArgs) *project.Job {
 	}
 
 	if args.LinuxImageResource != nil {
+		awsImageJobArgs := &AwsImageJobArgs{}
+		copier.Copy(awsImageJobArgs, args)
+		awsImage := AwsImageJob(awsImageJobArgs)
+		awsImageResource := args.ResourceRegistry.JobResource(awsImage, true, nil)
+		taskDummy.Environment["AWS_IMAGE"] = &primitive.Location{
+			Volume: awsImageResource,
+		}
+	}
+
+	if args.LinuxImageResource != nil {
 		gitImageJobArgs := &GitImageJobArgs{}
 		copier.Copy(gitImageJobArgs, args)
 		gitImage := GitImageJob(gitImageJobArgs)

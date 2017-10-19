@@ -23,7 +23,7 @@ type Specification interface {
 	TargetGitRepo() (*primitive.GitRepo, error)
 	Environment() (map[string]interface{}, error)
 	InitializeAdditionalSharedResourcesArgs(sharedResourcesArgs *library.SharedResourcesArgs) error
-	MaintenanceJobs(resourceRegistry *project.ResourceRegistry) (project.Jobs, error)
+	MaintenanceJobs(resourceRegistry *project.ResourceRegistry, gitResource *project.Resource) (project.Jobs, error)
 }
 
 const BranchesFileEnvVar = "BRANCHES_FILE"
@@ -182,18 +182,16 @@ func GenerateProject(specification Specification) (*project.Project, error) {
 		Name: "maintenance",
 	}
 	
-	if concourseBuilderBranch.IsMaster() {
-		maintenanceJobs, err := specification.MaintenanceJobs(mainPipeline.ResourceRegistry)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, job := range maintenanceJobs {
-			job.AddToGroup(maintenanceGroup)
-			job.AddJobToRunAfter(selfUpdateJob)
-		}
-		mainPipeline.Jobs = append(mainPipeline.Jobs, maintenanceJobs...)
+	maintenanceJobs, err := specification.MaintenanceJobs(mainPipeline.ResourceRegistry, concourseBuilderGit)
+	if err != nil {
+		return nil, err
 	}
+
+	for _, job := range maintenanceJobs {
+		job.AddToGroup(maintenanceGroup)
+		job.AddJobToRunAfter(selfUpdateJob)
+	}
+	mainPipeline.Jobs = append(mainPipeline.Jobs, maintenanceJobs...)
 
 	prj.Pipelines = append(prj.Pipelines, mainPipeline)
 
