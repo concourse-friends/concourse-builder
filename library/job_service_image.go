@@ -47,7 +47,7 @@ RUN apt-get update && \
 ARG CB_VERSION=5.0.0
 ARG CB_RELEASE_URL=http://packages.couchbase.com/releases
 ARG CB_PACKAGE=couchbase-server-enterprise_5.0.0-ubuntu16.04_amd64.deb
-ARG CB_SHA256=bc3b65c78793b819ecba87c330bd1bcc0a2edec214c597069c8eb7e34505eb69
+ARG CB_SHA256=2036fc6b10373b0959472ff8c0c44c5ac123a4147d94268d45d26e0e98cbf0b4
 
 ENV PATH=$PATH:/opt/couchbase/bin:/opt/couchbase/bin/tools:/opt/couchbase/bin/install
 
@@ -114,7 +114,7 @@ RUN echo "#!/bin/bash\n\nset -em\n\nsleep 10\n" > /peernova/couchbase/run.sh && 
     echo "/opt/couchbase/bin/curl -v -X POST http://\$COUCHBASE_HOST:\$COUCHBASE_PORT/pools/default -d memoryQuota=\$COUCHBASE_MEMORY_QUOTA -d indexMemoryQuota=\$COUCHBASE_MEMORY_QUOTA" >> /peernova/couchbase/run.sh && \
     echo "/opt/couchbase/bin/curl -v http://\$COUCHBASE_HOST:\$COUCHBASE_PORT/node/controller/setupServices -d services=kv%2cn1ql%2Cindex" >> /peernova/couchbase/run.sh && \
     echo "/opt/couchbase/bin/curl -v http://\$COUCHBASE_HOST:\$COUCHBASE_PORT/settings/web -d port=\$COUCHBASE_PORT -d username=\$COUCHBASE_USER -d password=\$COUCHBASE_PASSWORD" >> /peernova/couchbase/run.sh && \
-    echo "/opt/couchbase/bin/curl -v http://\$COUCHBASE_HOST:\$COUCHBASE_PORT/settings/indexes -d 'storageMode=memory_optimized' -d username=\$COUCHBASE_USER -d password=\$COUCHBASE_PASSWORD" >> /peernova/couchbase/run.sh && \
+    echo "/opt/couchbase/bin/curl -v http://\$COUCHBASE_HOST:\$COUCHBASE_PORT/settings/indexes -d storageMode=memory_optimized -d username=\$COUCHBASE_USER -d password=\$COUCHBASE_PASSWORD" >> /peernova/couchbase/run.sh && \
     echo "\nrm -f /peernova/couchbase/env\n" >> /peernova/couchbase/run.sh && \
     chmod 775 /peernova/couchbase/run.sh
 
