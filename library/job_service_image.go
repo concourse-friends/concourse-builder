@@ -62,6 +62,7 @@ RUN wget -N $CB_RELEASE_URL/$CB_VERSION/$CB_PACKAGE && \
 
 # Add runit script for couchbase-server
 #COPY scripts/run /etc/service/couchbase-server/run
+RUN mkdir -p /etc/service/couchbase-server && \
     echo "#!/bin/sh\n\nexec 2>&1\n\n# Create directories where couchbase stores its data" > /etc/service/couchbase-server/run && \
     echo "cd /opt/couchbase" >> /etc/service/couchbase-server/run && \
     echo "mkdir -p var/lib/couchbase var/lib/couchbase/config var/lib/couchbase/data var/lib/couchbase/stats var/lib/couchbase/logs var/lib/moxi" >> /etc/service/couchbase-server/run && \
@@ -84,7 +85,8 @@ RUN chrpath -r '$ORIGIN/../lib' /opt/couchbase/bin/curl
 
 # Add bootstrap script and Peernova hooks
 #COPY scripts/entrypoint.sh /
-RUN echo "#!/bin/bash\n\nset -e\n\nnohup /peernova/couchbase/run.sh &\n\n[[ \"\$1\" == \"couchbase-server\" ]] && {" > /entrypoint.sh && \
+RUN mkdir -p /peernova/couchbase && \
+    echo "#!/bin/bash\n\nset -e\n\nnohup /peernova/couchbase/run.sh &\n\n[[ \"\$1\" == \"couchbase-server\" ]] && {" > /entrypoint.sh && \
     echo "    echo \"Starting Couchbase Server -- Web UI available at http://<ip>:8091 and logs available in /opt/couchbase/var/lib/couchbase/logs\"" >> /entrypoint.sh && \
     echo "    exec /usr/sbin/runsvdir-start\n}\n\nexec \"\$@\"" >> /entrypoint.sh && \
     chmod 775 /entrypoint.sh
@@ -103,7 +105,6 @@ EXPOSE 8091 8092 8093 8094 11207 11210 11211 18091 18092 18093
 VOLUME /opt/couchbase/var
 
 # Peernova hooks
-RUN mkdir -p /peernova/couchbase
 RUN echo "COUCHBASE_USER='peernova'" > /peernova/couchbase/env && \
     echo "COUCHBASE_PASSWORD='peernova'" >> /peernova/couchbase/env && \
     echo "COUCHBASE_HOST='127.0.0.1'" >> /peernova/couchbase/env && \
